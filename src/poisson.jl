@@ -38,7 +38,7 @@ function PoissonPlan(nx::Int, ny::Int, nz::Int, dx::Real, dy::Real, dz::Real)
     temp = cu(Array{Complex{Float32}}(undef, r2csize))
     bw = plan_brfft(temp, nx)
 
-    diag = cu(calcdiagpoisson(size, (dx,dy,dz)) * prod(size) )
+    diag = cu(calcdiagpoisson(size, (dx,dy,dz)) / prod(size) )
 
 
     PoissonPlan(fw, bw, diag, size, temp)
