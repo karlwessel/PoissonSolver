@@ -7,7 +7,8 @@ DiffusionPlan(N::Int, dt::Real) = DiffusionPlan(N, N, N, 1/N, 1/N, 1/N, dt)
 function DiffusionPlan(nx::Int, ny::Int, nz::Int,
         dx::Real, dy::Real, dz::Real, dt::Real)
     plan = PoissonPlan(nx, ny, nz, dx, dy, dz)
-    diag = (2 .- dt*plan.diag) ./ (2 .+ dt*plan.diag) * prod(plan.size)
+    diag = calcdiagpoisson(plan.size, (dx,dy,dz))
+    diag = cu(1 ./ (2 .- dt*diag) ./ (2 .+ dt*diag) * prod(plan.size))
     DiffusionPlan(PoissonPlan(plan.planfw, plan.planbw, diag, plan.size, plan.temp))
 end
 
