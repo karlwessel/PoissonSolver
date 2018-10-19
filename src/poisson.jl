@@ -30,16 +30,17 @@ struct PoissonPlan
 end
 
 PoissonPlan(N::Int) = PoissonPlan(N, N, N, 1/N, 1/N, 1/N)
-
-function PoissonPlan(nx::Int, ny::Int, nz::Int, dx::Real, dy::Real, dz::Real)
-    size = (nx,ny,nz)
-    r2csize = (Int(nx/2+1), ny,nz)
+PoissonPlan(nx::Int, ny::Int, nz::Int, dx::Real, dy::Real, dz::Real) =
+        PoissonPlan((nx, ny, nz), dx, dy, dz)
+PoissonPlan(size::Tuple, dx::Real, dy::Real, dz::Real) =
+        PoissonPlan(calcdiagpoisson(size, (dx,dy,dz)), size, dx, dy, dz)
+function PoissonPlan(diag, size, dx::Real, dy::Real, dz::Real)
+    r2csize = (Int(size[1]/2+1), size[2], size[3])
     fw = plan_rfft(cu(Array{Float32}(undef, size)))
     temp = cu(Array{Complex{Float32}}(undef, r2csize))
-    bw = plan_brfft(temp, nx)
+    bw = plan_brfft(temp, size[1])
 
-    diag = cu(calcdiagpoisson(size, (dx,dy,dz)) / prod(size) )
-
+    diag = cu(diag / prod(size) )
 
     PoissonPlan(fw, bw, diag, size, temp)
 end
