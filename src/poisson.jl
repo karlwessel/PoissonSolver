@@ -44,8 +44,17 @@ function PoissonPlan(nx::Int, ny::Int, nz::Int, dx::Real, dy::Real, dz::Real)
     PoissonPlan(fw, bw, diag, size, temp)
 end
 
+function kernel_vdiv(a, b)
+    numThreads = blockDim().x * gridDim().x
+    threadID = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    for i in threadID:numThreads:length(a)
+        a[i] = a[i] / b[i]
+    end
+    return
+end
+
 function execute!(p::PoissonPlan, v::CuArray{Float32, 3})
     mul!(p.temp, p.planfw, v)
-    p.temp ./= p.diag
+    @cuda threads=256 blocks=64 kernel_vdiv(p.temp,p.diag)
     mul!(v, p.planbw, p.temp)
 end
