@@ -36,9 +36,9 @@ function PoissonPlan(nx::Int, ny::Int, nz::Int, dx::Real, dy::Real, dz::Real)
     r2csize = (Int(nx/2+1), ny,nz)
     fw = plan_rfft(cu(Array{Float32}(undef, size)))
     temp = cu(Array{Complex{Float32}}(undef, r2csize))
-    bw = plan_irfft(temp, nx)
+    bw = plan_brfft(temp, nx)
 
-    diag = cu(calcdiagpoisson(size, (dx,dy,dz)) )
+    diag = cu(calcdiagpoisson(size, (dx,dy,dz)) * prod(size) )
 
 
     PoissonPlan(fw, bw, diag, size, temp)
@@ -55,6 +55,7 @@ end
 
 function execute!(p::PoissonPlan, v::CuArray{Float32, 3})
     mul!(p.temp, p.planfw, v)
-    @cuda threads=256 blocks=64 kernel_vdiv(p.temp,p.diag)
+    p.temp ./= p.diag
+    #@cuda threads=256 blocks=64 kernel_vdiv(p.temp,p.diag)
     mul!(v, p.planbw, p.temp)
 end
