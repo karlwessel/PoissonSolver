@@ -8,8 +8,8 @@ function DiffusionPlan(nx::Int, ny::Int, nz::Int,
         dx::Real, dy::Real, dz::Real, dt::Real)
     plan = PoissonPlan(nx, ny, nz, dx, dy, dz)
     diag = calcdiagpoisson(plan.size, (dx,dy,dz))
-    diag = cu(1 ./ (2 .- dt*diag) ./ (2 .+ dt*diag) * prod(plan.size))
-    DiffusionPlan(PoissonPlan(plan.planfw, plan.planbw, diag, plan.size, plan.temp))
+    diag = (2 .+ dt*diag) ./ (2 .- dt*diag) / prod(plan.size)
+    DiffusionPlan(PoissonPlan(plan.planfw, plan.planbw, cu(diag), plan.size, plan.temp))
 end
 
 execute!(p::DiffusionPlan, v::CuArray{Float32, 3}) = execute!(p.plan, v)
@@ -42,13 +42,17 @@ end
 function diffusion(ic::String, out::String, N::Int, steps::Int, dt::Real)
     println("Reading input from $(ic)...")
     v = readvolume(ic, N)
+
     println("Creating Plan for $(N)³...")
     plan = DiffusionPlan(N, dt)
     vgpu = cu(v)
+
     println("Executing $(steps) with Δt=$(dt)...")
     execute!(plan, vgpu, steps)
     v = collect(vgpu)
+
     println("Writing result to $(out)...")
     writevolume(out, v)
+
     println("done!")
 end
